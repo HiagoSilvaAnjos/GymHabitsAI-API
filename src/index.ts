@@ -12,6 +12,7 @@ import fastifySwaggerUI from "@fastify/swagger-ui";
 import { auth } from "./lib/auth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import fastifyCors from "@fastify/cors";
+import fastifyApiReference from "@scalar/fastify-api-reference";
 
 const app = Fastify({
   logger: true,
@@ -34,13 +35,38 @@ await app.register(fastifySwagger, {
   transform: jsonSchemaTransform,
 });
 
-await app.register(fastifySwaggerUI, {
-  routePrefix: "/docs",
+await app.register(fastifyCors, {
+  origin: "http://localhost:30000",
+  credentials: true,
 });
 
-await app.register(fastifyCors, {
-  origin: "localhost:3000",
-  credentials: true,
+await app.register(fastifyApiReference, {
+  routePrefix: "/docs",
+  configuration: {
+    sources: [
+      {
+        title: "GymHabitsAI API",
+        slug: "gymhabitsai-api",
+        url: "/swagger.json",
+      },
+      {
+        title: "Better Auth API",
+        slug: "better-auth-api",
+        url: "/api/auth/open-api/generate-schema",
+      },
+    ],
+  },
+});
+
+app.withTypeProvider<ZodTypeProvider>().route({
+  method: "GET",
+  url: "/swagger.json",
+  schema: {
+    hide: true,
+  },
+  handler: async () => {
+    return app.swagger();
+  },
 });
 
 app.withTypeProvider<ZodTypeProvider>().route({
